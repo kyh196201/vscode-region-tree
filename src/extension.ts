@@ -11,7 +11,6 @@ class TreeNode extends vscode.TreeItem {
   ) {
     super(label, collapsibleState);
     this.tooltip = this.label;
-    this.description = this.label;
     this.line = line;
   }
 
