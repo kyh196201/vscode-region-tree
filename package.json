@@ -3,6 +3,14 @@
   "displayName": "vscode-region-toc",
   "description": "",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kyh196201/vscode-region-toc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kyh196201/vscode-region-toc/issues"
+  },
+  "homepage": "https://github.com/kyh196201/vscode-region-toc/issues",
   "engines": {
     "vscode": "^1.77.0"
   },
