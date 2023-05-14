@@ -2,6 +2,7 @@
   "name": "vscode-region-toc",
   "displayName": "vscode-region-toc",
   "description": "",
+  "publisher": "SEUNGWOOKIM",
   "version": "0.0.1",
   "repository": {
     "type": "git",
