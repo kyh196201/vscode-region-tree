@@ -90,6 +90,16 @@ const getTreeData = (content: string): TreeNode[] => {
 class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
   private _onDidChangeTreeData: vscode.EventEmitter<TreeNode | undefined | void> = new vscode.EventEmitter<TreeNode | undefined | void>();
   readonly onDidChangeTreeData: vscode.Event<TreeNode | undefined | void> = this._onDidChangeTreeData.event;
+  private data: TreeNode[] = [];
+
+  constructor() {
+    this.findRegions();
+  }
+  
+  findRegions() {
+    const content = getEditorContent();
+    this.data = getTreeData(content);
+  }
 
   getTreeItem(element: TreeNode): vscode.TreeItem {
     return element;
@@ -100,12 +110,12 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
       return element.getChildrens();
     }
 
-    const content = getEditorContent();
-    const treeData = getTreeData(content);
-    return treeData;
+    // 저장된 this.data를 반환
+    return this.data;
   }
 
   async refresh(): Promise<void> {
+    this.findRegions();
     this._onDidChangeTreeData.fire();
   }
 }
