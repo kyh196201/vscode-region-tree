@@ -137,36 +137,10 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 export function activate(context: vscode.ExtensionContext) {
   const treeDataProvider = new TreeDataProvider();
 
-  const treeView = vscode.window.createTreeView('regionsToc', {
+  vscode.window.createTreeView('regionsToc', {
     treeDataProvider,
     showCollapseAll: true,
   });
-
-  // treeView.onDidChangeSelection((e) => {
-  //   const selectedNodes = e.selection;
-
-  //   if (selectedNodes.length === 0) {
-  //     return;
-  //   }
-
-  //   const selectedNode = selectedNodes[0];
-
-  //   if (selectedNode?.line === undefined) {
-  //     return;
-  //   }
-
-  //   const editor = vscode.window.activeTextEditor;
-
-  //   if (!editor) {
-  //     return;
-  //   }
-
-  //   const pos = new vscode.Position(selectedNode.line, 0);
-
-  //   editor.selection = new vscode.Selection(pos, pos);
-    
-  //   editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
-  // });
 
   vscode.window.onDidChangeActiveTextEditor(() => {
     treeDataProvider.refresh();
@@ -186,10 +160,11 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   // refresh 커맨드 등록
-	let disposable = vscode.commands.registerCommand('vscode-region-toc.refresh', () => {
+	const refreshCommand = vscode.commands.registerCommand('vscode-region-toc.refresh', () => {
     treeDataProvider.refresh();
 	});
 
+  // reveal 커맨드 등록
   const revealCommand = vscode.commands.registerCommand('vscode-region-toc.reveal', (line) => {
     const editor = vscode.window.activeTextEditor;
 
@@ -204,11 +179,11 @@ export function activate(context: vscode.ExtensionContext) {
     editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
 	});
 
-  vscode.window.showInformationMessage('🎉 Vscode Region Toc 확장이 준비되었습니다. 🎉');
-
-	context.subscriptions.push(disposable);
-
+	context.subscriptions.push(refreshCommand);
+  
   context.subscriptions.push(revealCommand);
+
+  vscode.window.showInformationMessage('🎉 Vscode Region Toc 확장이 준비되었습니다. 🎉');
 }
 
 export function deactivate() {}
