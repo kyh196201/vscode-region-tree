@@ -36,6 +36,11 @@
       {
         "command": "vscode-region-toc.refresh",
         "title": "Refresh Region Toc"
+      },
+      {
+        "command": "vscode-region-toc.reveal",
+        "title": "Reveal Region",
+        "category": "View"
       }
     ],
     "views": {

@@ -11,6 +11,20 @@ class TreeNode extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.tooltip = this.label;
     this.line = line;
+
+    // line이 있을 경우 command 등록
+    // command를 실행하기 위해서 context.subscriptions에 push하고,
+    // package.json에 해당 command를 등록해야함
+    // ref: https://github.com/berabue/vscode-region-viewer/blob/master/src/regionTreeDataProvider.ts#L139
+    if (line) {
+      this.command = {
+        title: '',
+        command: 'vscode-region-toc.reveal',
+        arguments: [
+          line,
+        ],
+      };
+    }
   }
 
   addChildren(...children: TreeNode[]): void {
@@ -128,31 +142,31 @@ export function activate(context: vscode.ExtensionContext) {
     showCollapseAll: true,
   });
 
-  treeView.onDidChangeSelection((e) => {
-    const selectedNodes = e.selection;
+  // treeView.onDidChangeSelection((e) => {
+  //   const selectedNodes = e.selection;
 
-    if (selectedNodes.length === 0) {
-      return;
-    }
+  //   if (selectedNodes.length === 0) {
+  //     return;
+  //   }
 
-    const selectedNode = selectedNodes[0];
+  //   const selectedNode = selectedNodes[0];
 
-    if (selectedNode?.line === undefined) {
-      return;
-    }
+  //   if (selectedNode?.line === undefined) {
+  //     return;
+  //   }
 
-    const editor = vscode.window.activeTextEditor;
+  //   const editor = vscode.window.activeTextEditor;
 
-    if (!editor) {
-      return;
-    }
+  //   if (!editor) {
+  //     return;
+  //   }
 
-    const pos = new vscode.Position(selectedNode.line, 0);
+  //   const pos = new vscode.Position(selectedNode.line, 0);
 
-    editor.selection = new vscode.Selection(pos, pos);
+  //   editor.selection = new vscode.Selection(pos, pos);
     
-    editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
-  });
+  //   editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
+  // });
 
   vscode.window.onDidChangeActiveTextEditor(() => {
     treeDataProvider.refresh();
@@ -176,9 +190,25 @@ export function activate(context: vscode.ExtensionContext) {
     treeDataProvider.refresh();
 	});
 
+  const revealCommand = vscode.commands.registerCommand('vscode-region-toc.reveal', (line) => {
+    const editor = vscode.window.activeTextEditor;
+
+    if (!editor) {
+      return;
+    }
+
+    const pos = new vscode.Position(line, 0);
+
+    editor.selection = new vscode.Selection(pos, pos);
+    
+    editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
+	});
+
   vscode.window.showInformationMessage('🎉 Vscode Region Toc 확장이 준비되었습니다. 🎉');
 
 	context.subscriptions.push(disposable);
+
+  context.subscriptions.push(revealCommand);
 }
 
 export function deactivate() {}
