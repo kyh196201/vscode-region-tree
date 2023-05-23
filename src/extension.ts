@@ -125,12 +125,21 @@ export function activate(context: vscode.ExtensionContext) {
 
     const selectedNode = selectedNodes[0];
 
-    if (selectedNode.line !== undefined) {
-      vscode.commands.executeCommand('revealLine', {
-        lineNumber: selectedNode.line,
-        at: 'top',
-      });
+    if (selectedNode?.line === undefined) {
+      return;
     }
+
+    const editor = vscode.window.activeTextEditor;
+
+    if (!editor) {
+      return;
+    }
+
+    const pos = new vscode.Position(selectedNode.line, 0);
+
+    editor.selection = new vscode.Selection(pos, pos);
+    
+    editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
   });
 
   vscode.window.onDidChangeActiveTextEditor(() => {
