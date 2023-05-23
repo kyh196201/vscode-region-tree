@@ -6,10 +6,9 @@ class TreeNode extends vscode.TreeItem {
 
   constructor(
     public readonly label: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     line?: number,
   ) {
-    super(label, collapsibleState);
+    super(label, vscode.TreeItemCollapsibleState.None);
     this.tooltip = this.label;
     this.line = line;
   }
@@ -60,11 +59,14 @@ const getTreeData = (content: string): TreeNode[] => {
       if (regionMatch) {
         const label = regionMatch[1] || `Region ${treeData.length + 1}`;
 
-        const treeNode = new TreeNode(label, vscode.TreeItemCollapsibleState.Collapsed, index);
+        const treeNode = new TreeNode(label, index);
 
         if (stack.length > 0) {
           const parent = stack[stack.length - 1];
           parent.addChildren(treeNode);
+
+          // 자식 노드가 생길 경우 collapsibleState 업데이트
+          parent.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
         } else {
           treeData.push(treeNode);
         }
@@ -77,7 +79,7 @@ const getTreeData = (content: string): TreeNode[] => {
   });
 
   if (treeData.length === 0) {
-    const noRegionsNode: TreeNode = new TreeNode("No regions detected", vscode.TreeItemCollapsibleState.None);
+    const noRegionsNode: TreeNode = new TreeNode("No regions detected");
 
     treeData.push(noRegionsNode);
   }
