@@ -35,7 +35,7 @@ class TreeNode extends vscode.TreeItem {
     this.children.push(...children);
   }
 
-  getChildrens(): TreeNode[] | undefined {
+  getChildren(): TreeNode[] | undefined {
     return this.children;
   }
 }
@@ -54,10 +54,11 @@ const getEditorContent = (): string => {
 const getTreeData = (content: string): TreeNode[] => {
   const lines = content.split(/\r?\n/);
   const treeData: TreeNode[] = [];
-  const stack: TreeNode[] = [];
+  const stack: { node: TreeNode; counter: number }[] = [];
   let isInHtmlComment = false;
+  let globalCounter = 0; // 최상위 region 카운팅 용
 
-  lines.forEach((line, index) => {
+  lines.forEach((line, lineIndex) => {
     if (line.includes('<!--')) {
       isInHtmlComment = true;
     }
@@ -73,19 +74,26 @@ const getTreeData = (content: string): TreeNode[] => {
       if (regionMatch) {
         const label = regionMatch[1] || `Region ${treeData.length + 1}`;
 
-        const treeNode = new TreeNode(label, index);
+        // region 넘버링
+        const labelWithNumber =
+          stack.length === 0
+            ? `${++globalCounter}. ${label}`
+            : `${stack[stack.length - 1].node.label.split('.')[0]}-${++stack[stack.length - 1]
+                .counter}. ${label}`;
+
+        const treeNode = new TreeNode(labelWithNumber, lineIndex);
 
         if (stack.length > 0) {
-          const parent = stack[stack.length - 1];
+          const parent = stack[stack.length - 1].node;
           parent.addChildren(treeNode);
 
-          // 자식 노드가 생길 경우 collapsibleState 업데이트
-          parent.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+          // 자식 노드가 생길 경우 collapsibleState 업데이트 (Expanded로 변경)
+          parent.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
         } else {
           treeData.push(treeNode);
         }
 
-        stack.push(treeNode);
+        stack.push({ node: treeNode, counter: 0 });
       } else if (endregionMatch) {
         stack.pop();
       }
@@ -93,7 +101,7 @@ const getTreeData = (content: string): TreeNode[] => {
   });
 
   if (treeData.length === 0) {
-    const noRegionsNode: TreeNode = new TreeNode("No regions detected");
+    const noRegionsNode: TreeNode = new TreeNode('No regions detected');
 
     treeData.push(noRegionsNode);
   }
@@ -101,15 +109,32 @@ const getTreeData = (content: string): TreeNode[] => {
   return treeData;
 };
 
+// region의 시작 개수와 끝의 개수가 일치하지 않을 경우
+vscode.workspace.onWillSaveTextDocument((event) => {
+  const documentContent = event.document.getText();
+  const regionCount = (documentContent.match(/#region/gi) || []).length;
+  const endregionCount = (documentContent.match(/#endregion/gi) || []).length;
+
+  if (regionCount !== endregionCount) {
+    vscode.window.showErrorMessage('[경고] Region의 시작과 끝의 개수가 일치하지 않습니다.');
+  }
+  // 메시지 숨기기 우회 방법
+  setTimeout(() => {
+    vscode.window.showErrorMessage('');
+  }, 3000);
+});
+
 class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
-  private _onDidChangeTreeData: vscode.EventEmitter<TreeNode | undefined | void> = new vscode.EventEmitter<TreeNode | undefined | void>();
-  readonly onDidChangeTreeData: vscode.Event<TreeNode | undefined | void> = this._onDidChangeTreeData.event;
+  private _onDidChangeTreeData: vscode.EventEmitter<TreeNode | undefined | void> =
+    new vscode.EventEmitter<TreeNode | undefined | void>();
+  readonly onDidChangeTreeData: vscode.Event<TreeNode | undefined | void> =
+    this._onDidChangeTreeData.event;
   private data: TreeNode[] = [];
 
   constructor() {
     this.findRegions();
   }
-  
+
   findRegions() {
     const content = getEditorContent();
     this.data = getTreeData(content);
@@ -121,7 +146,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 
   getChildren(element?: TreeNode): vscode.ProviderResult<TreeNode[]> {
     if (element) {
-      return element.getChildrens();
+      return element.getChildren();
     }
 
     // 저장된 this.data를 반환
@@ -146,7 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
     treeDataProvider.refresh();
   });
 
-  vscode.workspace.onDidChangeTextDocument(event => {
+  vscode.workspace.onDidChangeTextDocument((event) => {
     if (event.document === vscode.window.activeTextEditor?.document) {
       treeDataProvider.refresh();
     }
@@ -160,9 +185,9 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   // refresh 커맨드 등록
-	const refreshCommand = vscode.commands.registerCommand('vscode-region-toc.refresh', () => {
+  const refreshCommand = vscode.commands.registerCommand('vscode-region-toc.refresh', () => {
     treeDataProvider.refresh();
-	});
+  });
 
   // reveal 커맨드 등록
   const revealCommand = vscode.commands.registerCommand('vscode-region-toc.reveal', (line) => {
@@ -175,12 +200,12 @@ export function activate(context: vscode.ExtensionContext) {
     const pos = new vscode.Position(line, 0);
 
     editor.selection = new vscode.Selection(pos, pos);
-    
-    editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
-	});
 
-	context.subscriptions.push(refreshCommand);
-  
+    editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
+  });
+
+  context.subscriptions.push(refreshCommand);
+
   context.subscriptions.push(revealCommand);
 
   vscode.window.showInformationMessage('🎉 Vscode Region Toc 확장이 준비되었습니다. 🎉');
