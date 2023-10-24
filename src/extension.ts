@@ -141,21 +141,17 @@ const checkRegionMatching = (content: string): { isValid: boolean; line?: number
   return { isValid: true };
 };
 
-vscode.workspace.onWillSaveTextDocument((event) => {
-  const documentContent = event.document.getText();
-
-  const { isValid, line } = checkRegionMatching(documentContent);
-
-  if (!isValid && line !== undefined) {
-    vscode.window.showErrorMessage('[경고] Region의 시작과 끝의 개수가 일치하지 않습니다.');
-
-    vscode.commands.executeCommand('vscode-region-toc.reveal', line);
-    
-    setTimeout(() => {
-      vscode.window.showErrorMessage('');
-    }, 3000);
-  }
-});
+/**
+ * vscodeRegionToc 설정에서 주어진 키에 대한 설정값을 가져옵니다.
+ * 
+ * @param key 설정의 키 값입니다.
+ * @param defaultValue 설정값이 없을 경우 반환될 기본 값입니다.
+ * @returns 설정값을 반환합니다.
+ */
+const getConfigurationValue = <T>(key: string, defaultValue: T): T => {
+  const config = vscode.workspace.getConfiguration('vscodeRegionToc');
+  return config.get<T>(key, defaultValue);
+};
 
 class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
   private _onDidChangeTreeData: vscode.EventEmitter<TreeNode | undefined | void> =
@@ -204,6 +200,31 @@ export function activate(context: vscode.ExtensionContext) {
     treeDataProvider.refresh();
   });
 
+  vscode.workspace.onWillSaveTextDocument((event) => {
+    const documentContent = event.document.getText();
+  
+    const { isValid, line } = checkRegionMatching(documentContent);
+  
+    if (!isValid && line !== undefined) {
+      const jumpToMismatchedRegionEnabled = getConfigurationValue<boolean>('enableJumpToMismatchedRegion', false);
+
+      let message = '⚠️ Region의 시작과 끝의 개수가 일치하지 않습니다.';
+      if (jumpToMismatchedRegionEnabled) {
+        message += '\n해당 라인의 region 또는 endregion을 제거해주세요.';
+      }
+      
+      vscode.window.showErrorMessage(message);
+  
+      if (jumpToMismatchedRegionEnabled) {
+        vscode.commands.executeCommand('vscode-region-toc.reveal', line);
+      }
+      
+      setTimeout(() => {
+        vscode.window.showErrorMessage('');
+      }, 3000);
+    }
+  });
+
   vscode.workspace.onDidChangeTextDocument((event) => {
     if (event.document === vscode.window.activeTextEditor?.document) {
       treeDataProvider.refresh();
@@ -235,9 +256,7 @@ export function activate(context: vscode.ExtensionContext) {
     editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
   });
 
-  context.subscriptions.push(refreshCommand);
-
-  context.subscriptions.push(revealCommand);
+  context.subscriptions.push(refreshCommand, revealCommand);
 
   vscode.window.showInformationMessage('🎉 Vscode Region Toc 확장이 준비되었습니다. 🎉');
 }
