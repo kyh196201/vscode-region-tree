@@ -110,18 +110,51 @@ const getTreeData = (content: string): TreeNode[] => {
 };
 
 // region의 시작 개수와 끝의 개수가 일치하지 않을 경우
+const checkRegionMatching = (content: string): { isValid: boolean; line?: number } => {
+  const lines = content.split(/\r?\n/);
+  const stack: number[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const regionMatch = line.match(/#region\s+(.*?)(\s*\*\/|\s*-->|\s*)$/i);
+    const endregionMatch = line.match(/#endregion/);
+
+    if (regionMatch) {
+      stack.push(i);
+    } else if (endregionMatch) {
+      // 1. #endregion이 더 많을 경우
+      if (!stack.length) {
+        return { isValid: false, line: i };
+      }
+
+      stack.pop();
+    }
+  }
+
+  // 2. #region이 더 많을 경우
+  if (stack.length) {
+    const line = stack.pop();
+    return { isValid: false, line };
+  }
+
+  return { isValid: true };
+};
+
 vscode.workspace.onWillSaveTextDocument((event) => {
   const documentContent = event.document.getText();
-  const regionCount = (documentContent.match(/#region/gi) || []).length;
-  const endregionCount = (documentContent.match(/#endregion/gi) || []).length;
 
-  if (regionCount !== endregionCount) {
+  const { isValid, line } = checkRegionMatching(documentContent);
+
+  if (!isValid && line !== undefined) {
     vscode.window.showErrorMessage('[경고] Region의 시작과 끝의 개수가 일치하지 않습니다.');
+
+    vscode.commands.executeCommand('vscode-region-toc.reveal', line);
+    
+    setTimeout(() => {
+      vscode.window.showErrorMessage('');
+    }, 3000);
   }
-  // 메시지 숨기기 우회 방법
-  setTimeout(() => {
-    vscode.window.showErrorMessage('');
-  }, 3000);
 });
 
 class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
@@ -179,7 +212,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   // 최초 포커스된 편집기가 있을 경우
   const activeEditor = vscode.window.activeTextEditor;
-
   if (activeEditor) {
     treeDataProvider.refresh();
   }
@@ -190,9 +222,8 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   // reveal 커맨드 등록
-  const revealCommand = vscode.commands.registerCommand('vscode-region-toc.reveal', (line) => {
+  const revealCommand = vscode.commands.registerCommand('vscode-region-toc.reveal', (line: number) => {
     const editor = vscode.window.activeTextEditor;
-
     if (!editor) {
       return;
     }
