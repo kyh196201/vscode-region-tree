@@ -22,8 +22,8 @@ export default {
 	},
 
 	scss: {
-		start: '^\\s*\\/\\*\\s*#region\\b(?<name>.*)\\s*\\*\\/',
-		end: '^\\s*\\/\\*\\s*#endregion\\b.*\\*\\/',
+		start: '^\\s*(\\/\\*\\s*#region\\b(?<name>.*)\\s*\\*\\/|//\\s*#region\\b(?<nameAlt>.*))',
+		end: '^\\s*(\\/\\*\\s*#endregion\\b.*\\*\\/|//\\s*#endregion\\b)',
 	},
 
 	css: {
@@ -31,10 +31,16 @@ export default {
 		end: '^\\s*\\/\\*\\s*#endregion\\b.*\\*\\/',
 	},
 
+	vue: {
+		start: '^\\s*//\\s*#?region\\b(?<name>.*)|\\s*<!--\\s*#region\\b(?<nameAlt>.*)-->',
+		end: '^\\s*//\\s*#?endregion\\b|\\s*<!--\\s*#endregion\\b.*-->',
+	},
+
 	markdown: {
 		start: '^\\s*<!--\\s*#?region\\b(?<name>.*)-->',
 		end: '^\\s*<!--\\s*#?endregion\\b.*-->',
 	},
+
 	php: {
 		start: '^\\s*(#|//)region\\b(?<name>.*)',
 		end: '^\\s*(#|//)endregion\\b',
