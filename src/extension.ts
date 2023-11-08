@@ -49,40 +49,6 @@ const getEditorContent = (): string => {
 	return editor.document.getText();
 };
 
-// region의 시작 개수와 끝의 개수가 일치하지 않을 경우
-const checkRegionMatching = (
-	content: string,
-): { isValid: boolean; line?: number } => {
-	const lines = content.split(/\r?\n/);
-	const stack: number[] = [];
-
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-
-		const regionMatch = line.match(/#region\s+(.*?)(\s*\*\/|\s*-->|\s*)$/i);
-		const endregionMatch = line.match(/#endregion/);
-
-		if (regionMatch) {
-			stack.push(i);
-		} else if (endregionMatch) {
-			// 1. #endregion이 더 많을 경우
-			if (!stack.length) {
-				return { isValid: false, line: i };
-			}
-
-			stack.pop();
-		}
-	}
-
-	// 2. #region이 더 많을 경우
-	if (stack.length) {
-		const line = stack.pop();
-		return { isValid: false, line };
-	}
-
-	return { isValid: true };
-};
-
 /**
  * vscodeRegionToc 설정에서 주어진 키에 대한 설정값을 가져옵니다.
  *
@@ -209,6 +175,63 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 		this.data = this.getTreeData(content);
 	}
 
+	/**
+	 * 파일 내용을 분석하여 짝이 맞지 않는 region 태그가 있는 라인 번호를 찾습니다.
+	 *
+	 * 각 region 시작 태그는 스택에 추가되며, 종료 태그를 만날 때 스택에서 제거됩니다.
+	 * 짝이 맞지 않는 시작 태그나 종료 태그가 발견되면 해당 라인 번호를 배열에 추가합니다.
+	 * 이 함수는 모든 region 태그가 적절히 닫혀 있는지 확인하는 데 사용됩니다.
+	 *
+	 * @param {string} content - 파일의 전체 내용을 문자열로 나타냅니다.
+	 * @returns {number[]} 짝이 맞지 않는 region 태그가 있는 라인 번호 배열을 반환합니다.
+	 *                      배열이 비어 있으면 모든 태그가 적절히 매칭되었다는 것을 의미합니다.
+	 */
+	findMismatchedRegions(content: string): number[] {
+		const document = vscode.window.activeTextEditor?.document;
+		if (!document) {
+			return [];
+		}
+
+		const { languageId } = document;
+		if (!(languageId in markers)) {
+			return [];
+		}
+
+		const mismatchedLines: number[] = [];
+		const regionStack: number[] = [];
+
+		const marker = markers[languageId];
+		const startRegExp = new RegExp(marker.start);
+		const endRegExp = new RegExp(marker.end);
+		const isRegionStart = (t: string) => startRegExp.test(t);
+		const isRegionEnd = (t: string) => endRegExp.test(t);
+
+		const lines = content.split(/\r?\n/);
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+
+			if (isRegionStart(line)) {
+				regionStack.push(i);
+			} else if (isRegionEnd(line)) {
+				// 1. #endregion이 더 많을 경우
+				if (!regionStack.length) {
+					mismatchedLines.push(i);
+				} else {
+					regionStack.pop();
+				}
+			}
+		}
+
+		// 2. #region이 더 많을 경우
+		if (regionStack.length) {
+			const line = regionStack.pop();
+			mismatchedLines.push(line as number);
+		}
+
+		return mismatchedLines;
+	}
+
 	getTreeItem(element: TreeNode): vscode.TreeItem {
 		return element;
 	}
@@ -240,12 +263,18 @@ export function activate(context: vscode.ExtensionContext) {
 		treeDataProvider.refresh();
 	});
 
+	vscode.workspace.onDidChangeTextDocument(event => {
+		if (event.document === vscode.window.activeTextEditor?.document) {
+			treeDataProvider.refresh();
+		}
+	});
+
 	vscode.workspace.onWillSaveTextDocument(event => {
 		const documentContent = event.document.getText();
 
-		const { isValid, line } = checkRegionMatching(documentContent);
+		const lines = treeDataProvider.findMismatchedRegions(documentContent);
 
-		if (!isValid && line !== undefined) {
+		if (lines.length) {
 			const jumpToMismatchedRegionEnabled =
 				getConfigurationValue<boolean>(
 					'enableJumpToMismatchedRegion',
@@ -263,19 +292,13 @@ export function activate(context: vscode.ExtensionContext) {
 			if (jumpToMismatchedRegionEnabled) {
 				vscode.commands.executeCommand(
 					'vscode-region-toc.reveal',
-					line,
+					lines[0],
 				);
 			}
 
 			setTimeout(() => {
 				vscode.window.showErrorMessage('');
 			}, 3000);
-		}
-	});
-
-	vscode.workspace.onDidChangeTextDocument(event => {
-		if (event.document === vscode.window.activeTextEditor?.document) {
-			treeDataProvider.refresh();
 		}
 	});
 
