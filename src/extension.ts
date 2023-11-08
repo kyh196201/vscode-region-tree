@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import markers from './markers';
 
 class TreeNode extends vscode.TreeItem {
 	children?: TreeNode[];
@@ -46,69 +47,6 @@ const getEditorContent = (): string => {
 	}
 
 	return editor.document.getText();
-};
-
-// ref: https://github.com/JunTaeHahm/region-tree-view/blob/main/extension.js#LL87C27-L87C27
-const getTreeData = (content: string): TreeNode[] => {
-	const lines = content.split(/\r?\n/);
-	const treeData: TreeNode[] = [];
-	const stack: { node: TreeNode; counter: number }[] = [];
-	let isInHtmlComment = false;
-	let globalCounter = 0; // 최상위 region 카운팅 용
-
-	lines.forEach((line, lineIndex) => {
-		if (line.includes('<!--')) {
-			isInHtmlComment = true;
-		}
-
-		if (line.includes('-->')) {
-			isInHtmlComment = false;
-		}
-
-		if (!isInHtmlComment) {
-			const regionMatch = line.match(
-				/#region\s+(.*?)(\s*\*\/|\s*-->|\s*)$/i,
-			);
-			const endregionMatch = line.match(/#endregion/);
-
-			if (regionMatch) {
-				const label = regionMatch[1] || `Region ${treeData.length + 1}`;
-
-				// region 넘버링
-				const labelWithNumber =
-					stack.length === 0
-						? `${++globalCounter}. ${label}`
-						: `${
-								stack[stack.length - 1].node.label.split('.')[0]
-						  }-${++stack[stack.length - 1].counter}. ${label}`;
-
-				const treeNode = new TreeNode(labelWithNumber, lineIndex);
-
-				if (stack.length > 0) {
-					const parent = stack[stack.length - 1].node;
-					parent.addChildren(treeNode);
-
-					// 자식 노드가 생길 경우 collapsibleState 업데이트 (Expanded로 변경)
-					parent.collapsibleState =
-						vscode.TreeItemCollapsibleState.Expanded;
-				} else {
-					treeData.push(treeNode);
-				}
-
-				stack.push({ node: treeNode, counter: 0 });
-			} else if (endregionMatch) {
-				stack.pop();
-			}
-		}
-	});
-
-	if (treeData.length === 0) {
-		const noRegionsNode: TreeNode = new TreeNode('No regions detected');
-
-		treeData.push(noRegionsNode);
-	}
-
-	return treeData;
 };
 
 // region의 시작 개수와 끝의 개수가 일치하지 않을 경우
@@ -169,9 +107,106 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 		this.findRegions();
 	}
 
+	private getEmptyTreeData() {
+		return [new TreeNode('No regions detected')];
+	}
+
+	private getLabel(input: string, match: RegExpExecArray | null): string {
+		if (match && match.groups) {
+			const groupIDs = ['name', 'nameAlt'];
+
+			// Look into capture groups
+			for (const groupID of groupIDs) {
+				if (
+					groupID in match.groups &&
+					match.groups[groupID] !== undefined
+				) {
+					const name = match.groups[groupID].trim();
+					if (name.length > 0) return name;
+				}
+			}
+
+			// Empty region name
+			return '# region';
+		} else {
+			// Regex error or no groups found
+			return input;
+		}
+	}
+
+	// ref: https://github.com/JunTaeHahm/region-tree-view/blob/main/extension.js#LL87C27-L87C27
+	getTreeData(content: string): TreeNode[] {
+		const document = vscode.window.activeTextEditor?.document;
+		if (!document) {
+			return this.getEmptyTreeData();
+		}
+
+		const { languageId } = document;
+
+		if (languageId in markers) {
+			const treeData: TreeNode[] = [];
+			const stack: { node: TreeNode; counter: number }[] = [];
+			const lines = content.split(/\r?\n/);
+			let globalCounter = 0; // 최상위 region 카운팅 용
+
+			const marker = markers[languageId];
+			const startRegExp = new RegExp(marker.start);
+			const endRegExp = new RegExp(marker.end);
+			const isRegionStart = (t: string) => startRegExp.test(t);
+			const isRegionEnd = (t: string) => endRegExp.test(t);
+
+			lines.forEach((line, lineIndex) => {
+				if (isRegionStart(line)) {
+					const regexResult = startRegExp.exec(line);
+					const label = this.getLabel(line, regexResult);
+
+					// region 넘버링
+					const labelWithNumber =
+						stack.length === 0
+							? `${++globalCounter}. ${label}`
+							: `${
+									stack[stack.length - 1].node.label.split(
+										'.',
+									)[0]
+							  }-${++stack[stack.length - 1].counter}. ${label}`;
+
+					const treeNode = new TreeNode(labelWithNumber, lineIndex);
+
+					// If we have a parent, register as their child
+					if (stack.length > 0) {
+						const parent = stack[stack.length - 1].node;
+						parent.addChildren(treeNode);
+
+						// 자식 노드가 생길 경우 collapsibleState 업데이트 (Expanded로 변경)
+						parent.collapsibleState =
+							vscode.TreeItemCollapsibleState.Expanded;
+					}
+
+					stack.push({ node: treeNode, counter: 0 });
+				} else if (isRegionEnd(line)) {
+					// If we just ended a root region, add it to treeRoot
+					if (stack.length === 1) {
+						treeData.push(stack[0].node);
+					}
+
+					stack.pop();
+				}
+			});
+
+			// If the region stack isn't empty, we didn't properly close all regions
+			if (stack.length > 0) {
+				treeData.push(stack[0].node);
+			}
+
+			return treeData.length ? treeData : this.getEmptyTreeData();
+		}
+
+		return this.getEmptyTreeData();
+	}
+
 	findRegions() {
 		const content = getEditorContent();
-		this.data = getTreeData(content);
+		this.data = this.getTreeData(content);
 	}
 
 	getTreeItem(element: TreeNode): vscode.TreeItem {
