@@ -100,8 +100,8 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 		let globalCounter = 0; // 최상위 region 카운팅 용
 
 		const marker = markers[languageId];
-		const startRegExp = new RegExp(marker.start);
-		const endRegExp = new RegExp(marker.end);
+		const startRegExp = new RegExp(marker.startRegex);
+		const endRegExp = new RegExp(marker.endRegex);
 		const isRegionStart = (t: string) => startRegExp.test(t);
 		const isRegionEnd = (t: string) => endRegExp.test(t);
 
@@ -175,8 +175,8 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 		const regionStack: number[] = [];
 
 		const marker = markers[languageId];
-		const startRegExp = new RegExp(marker.start);
-		const endRegExp = new RegExp(marker.end);
+		const startRegExp = new RegExp(marker.startRegex);
+		const endRegExp = new RegExp(marker.endRegex);
 		const isRegionStart = (t: string) => startRegExp.test(t);
 		const isRegionEnd = (t: string) => endRegExp.test(t);
 

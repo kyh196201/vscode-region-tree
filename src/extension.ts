@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import TreeDataProvider from './treeDataProvider';
+import markers from './markers';
 
 /**
  * vscodeRegionToc 설정에서 주어진 키에 대한 설정값을 가져옵니다.
@@ -98,7 +99,97 @@ export function activate(context: vscode.ExtensionContext) {
 		},
 	);
 
-	context.subscriptions.push(refreshCommand, revealCommand);
+	const regionCommand = vscode.commands.registerCommand(
+		'vscode-region-toc.wrapWithRegion',
+		() => {
+			// https://github.com/maptz/maptz.vscode.extensions.customfolding/blob/master/src/engine/RegionWrapper.ts#L19
+			const ate = vscode.window.activeTextEditor;
+			if (!ate) {
+				return;
+			}
+
+			const document = ate.document;
+			if (!document) {
+				return;
+			}
+
+			const { languageId } = document;
+			if (!languageId) {
+				return;
+			}
+
+			if (ate.selections.length > 1 || ate.selections.length < 1) {
+				return;
+			}
+
+			const sel = ate.selection;
+			if (sel.isEmpty) {
+				return;
+			}
+
+			const linePrefix = ate.document.getText(
+				new vscode.Range(
+					new vscode.Position(sel.start.line, 0),
+					sel.start,
+				),
+			);
+
+			const getEOLStr = (eol: vscode.EndOfLine) => {
+				if (eol === vscode.EndOfLine.CRLF) {
+					return '\r\n';
+				}
+
+				return '\n';
+			};
+
+			let addPrefix = '';
+			if (/^\s+$/.test(linePrefix)) {
+				addPrefix = linePrefix;
+			}
+			const eol = getEOLStr(ate.document.eol);
+			const currentLanguageConfig = markers[languageId];
+
+			const regionStartTemplate = currentLanguageConfig.start;
+			const idx = regionStartTemplate.indexOf('[NAME]');
+			const nameInsertionIndex =
+				idx < 0
+					? 0
+					: regionStartTemplate.length - '[NAME]'.length - idx;
+			const regionStartText = regionStartTemplate.replace('[NAME]', '');
+
+			ate.edit(edit => {
+				edit.insert(
+					sel.end,
+					eol + addPrefix + currentLanguageConfig.end,
+				);
+				edit.insert(sel.start, regionStartText + eol + addPrefix);
+			}).then(() => {
+				if (!ate) {
+					return;
+				}
+
+				const sel = ate.selection;
+				const newLine = sel.start.line - 1;
+				const newChar =
+					ate.document.lineAt(newLine).text.length -
+					nameInsertionIndex;
+				const newStart = sel.start.translate(
+					newLine - sel.start.line,
+					newChar - sel.start.character,
+				);
+				const newSelection = new vscode.Selection(newStart, newStart);
+				ate.selections = [newSelection];
+
+				vscode.commands.executeCommand(
+					'editor.action.formatDocument',
+					'editorHasDocumentFormattingProvider && editorTextFocus',
+					true,
+				);
+			});
+		},
+	);
+
+	context.subscriptions.push(refreshCommand, revealCommand, regionCommand);
 
 	vscode.window.showInformationMessage(
 		'🎉 Vscode Region Toc 확장이 준비되었습니다. 🎉',

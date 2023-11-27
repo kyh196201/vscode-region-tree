@@ -41,6 +41,10 @@
         "command": "vscode-region-toc.reveal",
         "title": "Reveal Region",
         "category": "View"
+      },
+      {
+        "command": "vscode-region-toc.wrapWithRegion",
+        "title": "Wrap with region"
       }
     ],
     "views": {

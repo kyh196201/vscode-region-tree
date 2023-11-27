@@ -1,5 +1,7 @@
 interface Markers {
 	[key: string]: {
+		startRegex: string;
+		endRegex: string;
 		start: string;
 		end: string;
 	};
@@ -7,42 +9,60 @@ interface Markers {
 
 export default {
 	javascript: {
-		start: '^\\s*//\\s*#?region\\b(?<name>.*)',
-		end: '^\\s*//\\s*#?endregion\\b',
+		startRegex: '^\\s*//\\s*#?region\\b(?<name>.*)',
+		endRegex: '^\\s*//\\s*#?endregion\\b',
+		start: '// #region [NAME]',
+		end: '// #endregion',
 	},
 
 	typescript: {
-		start: '^\\s*//\\s*#?region\\b(?<name>.*)',
-		end: '^\\s*//\\s*#?endregion\\b',
+		startRegex: '^\\s*//\\s*#?region\\b(?<name>.*)',
+		endRegex: '^\\s*//\\s*#?endregion\\b',
+		start: '// #region [NAME]',
+		end: '// #endregion',
 	},
 
 	html: {
-		start: '^\\s*<!--\\s*#region\\b(?<name>.*)-->',
-		end: '^\\s*<!--\\s*#endregion\\b.*-->',
+		startRegex: '^\\s*<!--\\s*#region\\b(?<name>.*)-->',
+		endRegex: '^\\s*<!--\\s*#endregion\\b.*-->',
+		start: '<!-- #region [NAME] -->',
+		end: '<!-- #endregion -->',
 	},
 
 	scss: {
-		start: '^\\s*(\\/\\*\\s*#region\\b(?<name>.*)\\s*\\*\\/|//\\s*#region\\b(?<nameAlt>.*))',
-		end: '^\\s*(\\/\\*\\s*#endregion\\b.*\\*\\/|//\\s*#endregion\\b)',
+		startRegex:
+			'^\\s*(\\/\\*\\s*#region\\b(?<name>.*)\\s*\\*\\/|//\\s*#region\\b(?<nameAlt>.*))',
+		endRegex: '^\\s*(\\/\\*\\s*#endregion\\b.*\\*\\/|//\\s*#endregion\\b)',
+		start: '/* #region [NAME] */',
+		end: '/* #endregion */',
 	},
 
 	css: {
-		start: '^\\s*\\/\\*\\s*#region\\b(?<name>.*)\\s*\\*\\/',
-		end: '^\\s*\\/\\*\\s*#endregion\\b.*\\*\\/',
+		startRegex: '^\\s*\\/\\*\\s*#region\\b(?<name>.*)\\s*\\*\\/',
+		endRegex: '^\\s*\\/\\*\\s*#endregion\\b.*\\*\\/',
+		start: '/* #region [NAME] */',
+		end: '/* #endregion */',
 	},
 
 	vue: {
-		start: '^\\s*//\\s*#?region\\b(?<name>.*)|\\s*<!--\\s*#region\\b(?<nameAlt>.*)-->',
-		end: '^\\s*//\\s*#?endregion\\b|\\s*<!--\\s*#endregion\\b.*-->',
+		startRegex:
+			'^\\s*//\\s*#?region\\b(?<name>.*)|\\s*<!--\\s*#region\\b(?<nameAlt>.*)-->',
+		endRegex: '^\\s*//\\s*#?endregion\\b|\\s*<!--\\s*#endregion\\b.*-->',
+		start: '<!-- #region [NAME] -->',
+		end: '<!-- #endregion -->',
 	},
 
 	markdown: {
-		start: '^\\s*<!--\\s*#?region\\b(?<name>.*)-->',
-		end: '^\\s*<!--\\s*#?endregion\\b.*-->',
+		startRegex: '^\\s*<!--\\s*#?region\\b(?<name>.*)-->',
+		endRegex: '^\\s*<!--\\s*#?endregion\\b.*-->',
+		start: '<!-- #region [NAME] -->',
+		end: '<!-- #endregion -->',
 	},
 
 	php: {
-		start: '^\\s*(#|//)region\\b(?<name>.*)',
-		end: '^\\s*(#|//)endregion\\b',
+		startRegex: '^\\s*(#|//)region\\b(?<name>.*)',
+		endRegex: '^\\s*(#|//)endregion\\b',
+		start: '/* #region [NAME] */',
+		end: '/* #endregion */',
 	},
 } as Markers;
