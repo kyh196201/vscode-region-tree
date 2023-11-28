@@ -17,7 +17,7 @@ class TreeNode extends vscode.TreeItem {
 		// command를 실행하기 위해서 context.subscriptions에 push하고,
 		// package.json에 해당 command를 등록해야함
 		// ref: https://github.com/berabue/vscode-region-viewer/blob/master/src/regionTreeDataProvider.ts#L139
-		if (line) {
+		if (typeof line === 'number') {
 			this.command = {
 				title: '',
 				command: 'vscode-region-toc.reveal',
@@ -110,7 +110,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 				const regexResult = startRegExp.exec(line);
 				const label = this.getLabel(line, regexResult);
 
-				// region 넘버링
+				// regions 넘버링
 				const labelWithNumber =
 					stack.length === 0
 						? `${++globalCounter}. ${label}`
