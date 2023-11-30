@@ -1,17 +1,17 @@
 {
-  "name": "vscode-region-toc",
-  "displayName": "vscode-region-toc",
+  "name": "vscode-region-tree",
+  "displayName": "vscode-region-tree",
   "description": "",
   "publisher": "SEUNGWOOKIM",
-  "version": "0.0.7",
+  "version": "0.0.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kyh196201/vscode-region-toc.git"
+    "url": "https://github.com/kyh196201/vscode-region-tree.git"
   },
   "bugs": {
-    "url": "https://github.com/kyh196201/vscode-region-toc/issues"
+    "url": "https://github.com/kyh196201/vscode-region-tree/issues"
   },
-  "homepage": "https://github.com/kyh196201/vscode-region-toc/issues",
+  "homepage": "https://github.com/kyh196201/vscode-region-tree/issues",
   "engines": {
     "vscode": "^1.77.0"
   },
@@ -34,31 +34,31 @@
     },
     "commands": [
       {
-        "command": "vscode-region-toc.refresh",
-        "title": "Refresh Region Toc"
+        "command": "vscode-region-tree.refresh",
+        "title": "Refresh Region Tree"
       },
       {
-        "command": "vscode-region-toc.reveal",
+        "command": "vscode-region-tree.reveal",
         "title": "Reveal Region",
         "category": "View"
       },
       {
-        "command": "vscode-region-toc.wrapWithRegion",
+        "command": "vscode-region-tree.wrapWithRegion",
         "title": "Wrap with region"
       }
     ],
     "views": {
       "region-explorer": [
         {
-          "id": "regionsToc",
-          "name": "regionsToc"
+          "id": "regionTree",
+          "name": "regionTree"
         }
       ]
     },
     "configuration": {
-      "title": "vscode-region-toc",
+      "title": "vscode-region-tree",
       "properties": {
-        "vscodeRegionToc.enableJumpToMismatchedRegion": {
+        "vscodeRegionTree.enableJumpToMismatchedRegion": {
           "type": "boolean",
           "default": false,
           "description": "파일 저장 시 region, endregion의 짝이 맞지 않을 경우 해당 라인으로 이동하는 기능을 활성화합니다."

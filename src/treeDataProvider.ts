@@ -20,7 +20,7 @@ class TreeNode extends vscode.TreeItem {
 		if (typeof line === 'number') {
 			this.command = {
 				title: '',
-				command: 'vscode-region-toc.reveal',
+				command: 'vscode-region-tree.reveal',
 				arguments: [line],
 			};
 		}

@@ -3,21 +3,21 @@ import TreeDataProvider from './treeDataProvider';
 import markers from './markers';
 
 /**
- * vscodeRegionToc 설정에서 주어진 키에 대한 설정값을 가져옵니다.
+ * vscodeRegionTree 설정에서 주어진 키에 대한 설정값을 가져옵니다.
  *
  * @param key 설정의 키 값입니다.
  * @param defaultValue 설정값이 없을 경우 반환될 기본 값입니다.
  * @returns 설정값을 반환합니다.
  */
 const getConfigurationValue = <T>(key: string, defaultValue: T): T => {
-	const config = vscode.workspace.getConfiguration('vscodeRegionToc');
+	const config = vscode.workspace.getConfiguration('vscodeRegionTree');
 	return config.get<T>(key, defaultValue);
 };
 
 export function activate(context: vscode.ExtensionContext) {
 	const treeDataProvider = new TreeDataProvider();
 
-	vscode.window.createTreeView('regionsToc', {
+	vscode.window.createTreeView('regionTree', {
 		treeDataProvider,
 		showCollapseAll: true,
 	});
@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			if (jumpToMismatchedRegionEnabled) {
 				vscode.commands.executeCommand(
-					'vscode-region-toc.reveal',
+					'vscode-region-tree.reveal',
 					lines[0],
 				);
 			}
@@ -73,7 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// refresh 커맨드 등록
 	const refreshCommand = vscode.commands.registerCommand(
-		'vscode-region-toc.refresh',
+		'vscode-region-tree.refresh',
 		() => {
 			treeDataProvider.refresh();
 		},
@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// reveal 커맨드 등록
 	const revealCommand = vscode.commands.registerCommand(
-		'vscode-region-toc.reveal',
+		'vscode-region-tree.reveal',
 		(line: number) => {
 			const editor = vscode.window.activeTextEditor;
 			if (!editor) {
@@ -100,7 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	const regionCommand = vscode.commands.registerCommand(
-		'vscode-region-toc.wrapWithRegion',
+		'vscode-region-tree.wrapWithRegion',
 		() => {
 			// https://github.com/maptz/maptz.vscode.extensions.customfolding/blob/master/src/engine/RegionWrapper.ts#L19
 			const ate = vscode.window.activeTextEditor;
@@ -192,7 +192,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(refreshCommand, revealCommand, regionCommand);
 
 	vscode.window.showInformationMessage(
-		'🎉 Vscode Region Toc 확장이 준비되었습니다. 🎉',
+		'🎉 Vscode Region Tree 확장이 준비되었습니다. 🎉',
 	);
 }
 
