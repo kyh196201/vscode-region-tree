@@ -64,7 +64,15 @@
           "description": "파일 저장 시 region, endregion의 짝이 맞지 않을 경우 해당 라인으로 이동하는 기능을 활성화합니다."
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+          "command": "vscode-region-tree.wrapWithRegion",
+          "key": "ctrl+alt+r",
+          "mac": "ctrl+cmd+r",
+          "when": "editorFocus && editorHasSelection && !editorHasMultipleSelections"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
